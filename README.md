@@ -144,15 +144,15 @@ terraform plan
 
 ### Creating an Instance
 
-In this next example, we want to create a virtual machine (an `aws_instance`) that we can connect to with a shell. 
+In this next example, we want to create a virtual machine (an [`aws_instance`](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/instance)) that we can connect to with a shell. 
 
 Our VPC is not connected to the Internet so we can't SSH onto the host. We're going to use an AWS feature called *Systems Manager Session Manager* to connect to our host.
 
-We now have a lot more to contend with as to make this happen our virtual machine needs to call AWS API's to interact with the AWS service - and we need to call these API's without an Internet connection. To enable us to call these API's we're going to use a feature called *VPC Interface Endpoints* (`aws_vpc_endpoint`). These provision *Elastic Network Interfaces* (ENIs) into our subnets that can receive the API requests and transmit them over the AWS network to the AWS services. We need the DNS entries for these services to point at our ENIs - so we need to enable DNS support on our VPC.
+We now have a lot more to contend with as to make this happen our virtual machine needs to call AWS API's to interact with the AWS service - and we need to call these API's without an Internet connection. To enable us to call these API's we're going to use a feature called *VPC Interface Endpoints* ([`aws_vpc_endpoint`](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_endploint)). These provision *Elastic Network Interfaces* (ENIs) into our subnets that can receive the API requests and transmit them over the AWS network to the AWS services. We need the DNS entries for these services to point at our ENIs - so we need to enable DNS support on our VPC.
 
 In our terraform code we're using the "splat" operator to reference a set of attributes from a resource we created where the `count` attribute was set.
 
-The *VPC Interface Endpoints* require us to setup a *Security Group* (`aws_security_group`) to govern which traffic the endpoint can receive. A *Security Group* is a kind of Firewall.
+The *VPC Interface Endpoints* require us to setup a *Security Group* ([`aws_security_group`](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group)) to govern which traffic the endpoint can receive. A *Security Group* is a kind of Firewall.
 
 When we create an instance we define the base image that will be used to provision it. These are called *Amazon Machine Images* (AMIs). We're going to look up the latest Ubuntu release from Canonical.
 
@@ -171,7 +171,7 @@ aws ssm start-session --target "${INSTANCE_ID}"
 
 AWS has a concept of an *Auto Scaling Group* (ASG). An ASG enables us to provision a group of hosts and will ensure that the number of hosts always corresponds to the desired capacity. It can also be configured to automatically update the desired capacity based on various metrics.
 
-Replace our `aws_instance` with an `aws_auto_scaling_group` that has a minimum capacity of 1 instance and a maximum capacity of 2 instances. When scaled up - the instances should be distributed across our subnets.
+Replace our [`aws_instance`](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/instance) with an [`aws_auto_scaling_group`](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/auto_scaling_group) that has a minimum capacity of 1 instance and a maximum capacity of 2 instances. When scaled up - the instances should be distributed across our subnets.
 
 You can scale it up using the AWS CLI (assuming you named your ASG <your-initials>-instance-group):
 
@@ -183,7 +183,7 @@ aws autoscaling set-desired-capacity --auto-scaling-group-name <your-initials>-i
 
 Up until this point, our VPC has been entirely disconnected from the Internet. We've been able to access our instance using AWS services but our instance has been unable to reach the Internet.
 
-In this example, we add Internet access to our VPC. To allow a VPC to connect to the Internet we need to provision an Internet Gateway (`aws_vpc_internet_gateway`). However, our instance doesn't have a public IP address so we need to also provision a NAT Gateway (`aws_vpc_nat_gateway`) and have traffic from our private subnets route to the NAT gateway - which runs in our public subnets and does have a public IP address) and have traffic from our public subnets (including the NAT Gateway) route to the Internet gateway.
+In this example, we add Internet access to our VPC. To allow a VPC to connect to the Internet we need to provision an Internet Gateway ([`aws_vpc_internet_gateway`](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_internet_gateway)). However, our instance doesn't have a public IP address so we need to also provision a NAT Gateway ([`aws_vpc_nat_gateway`](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_nat_gateway)) and have traffic from our private subnets route to the NAT gateway - which runs in our public subnets and does have a public IP address) and have traffic from our public subnets (including the NAT Gateway) route to the Internet gateway.
 
 ```puml
 @startuml
@@ -237,7 +237,7 @@ curl http://$NGINX
 
 Currently we have to go and find the IP address of our NGINX instance using the AWS API. This doesn't work if we have >1 instance in our auto-scaling group and this value can change as the auto-scaling group expands or contracts or if the instance is replaced.
 
-Add a classic load-balancer `aws_elb` to front our auto-scaling group. Add a DNS entry of `<your-initials>.daleaws.co.uk` that points to the load-balancer (`aws_route53_record` using an `alias`).
+Add a classic load-balancer [`aws_elb`](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/elb) to front our auto-scaling group. Add a DNS entry of `<your-initials>.daleaws.co.uk` that points to the load-balancer ([`aws_route53_record`](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route53_record) using an `alias`).
 
 ### Cleanup
 

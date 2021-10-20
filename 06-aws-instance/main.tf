@@ -28,6 +28,28 @@ resource "aws_subnet" "private" {
   }
 }
 
+locals {
+  aws_apis = ["ssm", "ec2messages", "ssmmessages"]
+}
+
+resource "aws_vpc_endpoint" "aws_api" {
+  count = length(local.aws_apis)
+
+  vpc_id              = aws_vpc.main.id
+  service_name        = "com.amazonaws.${data.aws_region.current.name}.${local.aws_apis[count.index]}"
+  vpc_endpoint_type   = "Interface"
+  private_dns_enabled = true
+  subnet_ids          = aws_subnet.private.*.id
+
+  security_group_ids = [
+    aws_security_group.inbound_tls_from_vpc.id
+  ]
+
+  tags = {
+    Name = "${var.owner}-aws-${local.aws_apis[count.index]}"
+  }
+}
+
 resource "aws_security_group" "inbound_tls_from_vpc" {
   name        = "${var.owner}-inbound-tls-from-vpc"
   description = "Allow inbound TLS access from VPC"
@@ -44,78 +66,22 @@ resource "aws_security_group" "inbound_tls_from_vpc" {
   tags = {}
 }
 
-resource "aws_vpc_endpoint" "ssm" {
-  vpc_id            = aws_vpc.main.id
-  service_name      = "com.amazonaws.${data.aws_region.current.name}.ssm"
-  vpc_endpoint_type = "Interface"
-
-  security_group_ids = [
-    aws_security_group.inbound_tls_from_vpc.id
-  ]
-
-  private_dns_enabled = true
-
-  subnet_ids = aws_subnet.private.*.id
-
-  tags = {
-    Name = "${var.owner}-aws-ssm"
-  }
-}
-
-resource "aws_vpc_endpoint" "ec2messages" {
-  vpc_id            = aws_vpc.main.id
-  service_name      = "com.amazonaws.${data.aws_region.current.name}.ec2messages"
-  vpc_endpoint_type = "Interface"
-
-  security_group_ids = [
-    aws_security_group.inbound_tls_from_vpc.id
-  ]
-
-  private_dns_enabled = true
-
-  subnet_ids = aws_subnet.private.*.id
-
-  tags = {
-    Name = "${var.owner}-aws-ec2messages"
-  }
-}
-
-resource "aws_vpc_endpoint" "ssmmessages" {
-  vpc_id            = aws_vpc.main.id
-  service_name      = "com.amazonaws.${data.aws_region.current.name}.ssmmessages"
-  vpc_endpoint_type = "Interface"
-
-  security_group_ids = [
-    aws_security_group.inbound_tls_from_vpc.id
-  ]
-
-  private_dns_enabled = true
-
-  subnet_ids = aws_subnet.private.*.id
-
-  tags = {
-    Name = "${var.owner}-aws-ssmmessages"
-  }
-}
-
 #
 # Instance
 #
 
-data "aws_ami" "ubuntu" {
-  most_recent = true
+resource "aws_security_group" "outbound_to_vpc" {
+  name        = "${var.owner}-outbound-vpc"
+  description = "Allow outbound traffic to VPC"
+  vpc_id      = aws_vpc.main.id
 
-  filter {
-    name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"]
+  egress {
+    description = "Outbound to VPC"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "all"
+    cidr_blocks = [aws_vpc.main.cidr_block]
   }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
-
-  owners = ["099720109477"] # Canonical
 }
 
 resource "aws_iam_role" "instance_role" {
@@ -136,24 +102,26 @@ resource "aws_iam_role" "instance_role" {
   managed_policy_arns = ["arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"]
 }
 
-resource "aws_security_group" "outbound_to_vpc" {
-  name        = "${var.owner}-outbound-vpc"
-  description = "Allow outbound traffic to VPC"
-  vpc_id      = aws_vpc.main.id
-
-  egress {
-    description = "Outbound to VPC"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "all"
-    cidr_blocks = [aws_vpc.main.cidr_block]
-  }
-}
-
 resource "aws_iam_instance_profile" "instance_profile" {
   name = "${var.owner}-profile"
   role = aws_iam_role.instance_role.name
   tags = {}
+}
+
+data "aws_ami" "ubuntu" {
+  most_recent = true
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  owners = ["099720109477"] # Canonical
 }
 
 resource "aws_instance" "instance" {
