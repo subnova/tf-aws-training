@@ -201,11 +201,13 @@ package pusa as "public-subnet-a" {
 package pusb as "public-subnet-b" {
     node inc as "instance-c"
 }
+package igw as "internet gw"
 cloud "internet"
 ina --> ngw
 inb --> ngw
-ngw --> internet
-inc --> internet
+ngw --> igw
+inc --> igw
+igw --> internet
 @enduml
 ```
 
