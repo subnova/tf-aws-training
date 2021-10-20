@@ -185,6 +185,30 @@ Up until this point, our VPC has been entirely disconnected from the Internet. W
 
 In this example, we add Internet access to our VPC. To allow a VPC to connect to the Internet we need to provision an Internet Gateway (`aws_vpc_internet_gateway`). However, our instance doesn't have a public IP address so we need to also provision a NAT Gateway (`aws_vpc_nat_gateway`) and have traffic from our private subnets route to the NAT gateway - which runs in our public subnets and does have a public IP address) and have traffic from our public subnets (including the NAT Gateway) route to the Internet gateway.
 
+```puml
+@startuml
+top to bottom direction
+
+package pvsa as "private-subnet-a" {
+    node ina as "instance-a"
+}
+package pvsb as "private-subnet-b" {
+    node inb as "instance-b"
+}
+package pusa as "public-subnet-a" {
+    node ngw as "nat gw"
+}
+package pusb as "public-subnet-b" {
+    node inc as "instance-c"
+}
+cloud "internet"
+ina --> ngw
+inb --> ngw
+ngw --> internet
+inc --> internet
+@enduml
+```
+
 We no longer require our VPC Interface Endpoints to reach the AWS API's as we can now reach them over the Internet.
 
 ```sh
