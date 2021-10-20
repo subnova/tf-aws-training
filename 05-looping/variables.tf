@@ -3,8 +3,8 @@ variable "owner" {
   type        = string
 
   validation {
-    condition     = can(regex("[a-z]{2,3}", var.owner))
-    error_message = "The owner value must consist of 2-3 lower-case ascii characters."
+     condition     = can(regex("^[a-z]{2,3}$", var.owner))
+     error_message = "The owner value must consist of 2-3 lower-case ascii characters."
   }
 }
 
@@ -13,7 +13,7 @@ variable "vpc_cidr" {
   type        = string
 
   validation {
-    condition     = can(regex("\\d{1,3}.\\d{1,3}.\\d{1,3}.\\d{1,3}/\\d{1,2}", var.vpc_cidr))
+    condition     = can(regex("^\\d{1,3}.\\d{1,3}.\\d{1,3}.\\d{1,3}/\\d{1,2}$", var.vpc_cidr))
     error_message = "Must be a valid CIDR."
   }
 }
@@ -23,7 +23,7 @@ variable "region" {
   type        = string
 
   validation {
-    condition     = can(regex("[a-z]{2}-\\w+-\\d", var.region))
+    condition     = can(regex("^[a-z]{2}-\\w+-\\d$", var.region))
     error_message = "The AWS region is not legal."
   }
 }
